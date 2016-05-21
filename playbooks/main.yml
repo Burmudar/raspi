@@ -1,0 +1,18 @@
+---
+- hosts: raspi
+  become: yes
+  become_user: root
+  become_method: su
+  tasks:
+  - name: Add Sonarr key
+    apt_key: keyserver=keyserver.ubuntu.com id=FDA5DFFC state=present
+    ignore_errors: true
+  - name: Add Sonarr repo
+    apt_repository: repo='deb http://apt.sonarr.tv/ master main' state=present
+  - name: Install basic required software
+    apt: name={{ item }} state=present update_cache=true cache_valid_time=3600
+    with_items:
+    - deluged
+    - deluge-web
+    - mono-complete
+    - nzbdrone
