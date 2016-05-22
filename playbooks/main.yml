@@ -4,6 +4,12 @@
   become_user: root
   become_method: su
   tasks:
+  - name: Add Mono Project key
+    apt_key: keyserver=keyserver.ubuntu.com id=3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+  - name: Add Mono repository
+    apt_repository: repo='deb http://download.mono-project.com/repo/debian wheezy main' state=present
+  - name: Add libgdiplus repo
+    apt_repository: repo='deb http://download.mono-project.com/repo/debian wheezy-libjpeg62-compat main' state=present
   - name: Add Sonarr key
     apt_key: keyserver=keyserver.ubuntu.com id=FDA5DFFC state=present
     ignore_errors: true
@@ -14,5 +20,32 @@
     with_items:
     - deluged
     - deluge-web
+    - deluge-console
     - mono-complete
     - nzbdrone
+  - name: Add Deluge user and group
+    user: name=deluge system=yes home=/var/lib/deluge state=present
+  - name: Add William to user group
+    user: append=yes name=william groups=deluge generate_ssh_key=no state=present
+  - name: Add Deluge systemd service
+    copy: src=files/deluged.service dest=/etc/systemd/system/deluged.service
+  - name: Enable deluge service
+    command: /bin/systemctl enable deluged 
+  - name: Stop deluge service
+    service: name=deluged state=stopped
+  - name: Add Deluge-web systemd service
+    copy: src=files/deluge-web.service dest=/etc/systemd/system/deluge-web.service
+  - name: Enable deluge-web service
+    command: /bin/systemctl enable deluge-web
+  - name: Stop deluge-web service
+    service: name=deluge-web state=stopped
+  - name: Add deluge auth file
+    copy: src=files/deluge_auth dest=/var/lib/deluge/.config/deluge/auth
+  - name: Set deluge config
+    copy: src=files/deluge_core.conf dest=/var/lib/deluge/.config/deluge/core.conf
+  - name: Setup deluge logging
+    file: path=/var/log/deluge state=directory owner=deluge group=deluge mode=750 recurse=yes
+  - name: Start deluge service
+    service: name=deluged state=started
+  - name: Start deluge-web service
+    service: name=deluge-web state=started
