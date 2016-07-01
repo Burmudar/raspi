@@ -6,7 +6,7 @@
   tasks:
   - name: Add Mono Project key
     apt_key: keyserver=keyserver.ubuntu.com id=3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-  - name: Add Mono repository
+  - name: Add Mono repository 
     apt_repository: repo='deb http://download.mono-project.com/repo/debian wheezy main' state=present
   - name: Add libgdiplus repo
     apt_repository: repo='deb http://download.mono-project.com/repo/debian wheezy-libjpeg62-compat main' state=present
@@ -23,10 +23,21 @@
     - deluge-console
     - mono-complete
     - nzbdrone
+    - ntfs-3g
+    - samba
+    - samba-common-bin
+  - name: Mount External Drive
+    mount: name=/mnt/stash src=/dev/sda1 state=mounted fstype=ntfs-3g
+  - name: Create [Movies] link
+    file: path=/home/pi/Movies src=/mnt/stash/Movies state=link
+  - name: Create [Series] link
+    file: path=/home/pi/Series src=/mnt/stash/Series state=link
+  - name: Create [Downloads] link
+    file: path=/home/pi/Downloads src=/mnt/stash/Downloads state=link
   - name: Add Deluge user and group
     user: name=deluge system=yes home=/var/lib/deluge state=present
-  - name: Add William to user group
-    user: append=yes name=william groups=deluge generate_ssh_key=no state=present
+  - name: Add pi to user group
+    user: append=yes name=pi groups=deluge generate_ssh_key=no state=present
   - name: Add Deluge systemd service
     copy: src=files/deluged.service dest=/etc/systemd/system/deluged.service
   - name: Enable deluge service
@@ -39,13 +50,40 @@
     command: /bin/systemctl enable deluge-web
   - name: Stop deluge-web service
     service: name=deluge-web state=stopped
+  - name: Create required deluge directories
+    file: path=/var/lib/deluge/{{ item }} state=directory owner=deluge group=deluge
+    with_items:
+    - .config/deluge
+    - Downloads
   - name: Add deluge auth file
-    copy: src=files/deluge_auth dest=/var/lib/deluge/.config/deluge/auth
+    copy: src=files/deluge_auth dest=/var/lib/deluge/.config/deluge/auth owner=deluge group=deluge
   - name: Set deluge config
-    copy: src=files/deluge_core.conf dest=/var/lib/deluge/.config/deluge/core.conf
+    copy: src=files/deluge_core.conf dest=/var/lib/deluge/.config/deluge/core.conf owner=deluge group=deluge
   - name: Setup deluge logging
     file: path=/var/log/deluge state=directory owner=deluge group=deluge mode=750 recurse=yes
+  - name: Create [Incomplete] link from deluge to mounted drive
+    file: dest=/var/lib/deluge/Downloads/Incomplete src=/mnt/stash/Downloads/torrent-incomplete state=link
+  - name: Create [Incomplete] link from deluge to mounted drive
+    file: dest=/var/lib/deluge/Downloads/Complete src=/mnt/stash/Downloads/torrent-complete state=link
   - name: Start deluge service
     service: name=deluged state=started
   - name: Start deluge-web service
     service: name=deluge-web state=started
+  - name: Ensure /opt/NzbDrone is owned by user pi
+    file: path=/opt/NzbDrone owner=pi group=pi recurse=yes
+  - name: Add Sonarr service
+    copy: src=files/sonarr.service dest=/etc/systemd/system/sonarr.service
+  - name: Enable Sonarr service
+    command: /bin/systemctl enable sonarr 
+  - name: Ensure Sonarr service 
+    service: name=sonarr state=started
+  - name: set samba config
+    copy: src=files/smb.conf dest=/etc/samba/smb.conf owner=root group=root
+  - name: Enable Samba service
+    command: /bin/systemctl enable smbd 
+  - name: Set hostname to downloadpi
+    hostname: name=downloadpi
+  - name: Ensure Samba service is restarted
+    service: name=smbd state=restarted
+  - name: Ensure nmbd service is restarted
+    service: name=nmbd state=restarted
