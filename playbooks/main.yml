@@ -1,21 +1,30 @@
 ---
 - hosts: raspi
-  become: yes
-  become_user: root
-  become_method: su
   tasks:
   - name: Add Mono Project key
+    become: true
+    become_user: root
     apt_key: keyserver=keyserver.ubuntu.com id=3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
   - name: Add Mono repository 
+    become: true
+    become_user: root
     apt_repository: repo='deb http://download.mono-project.com/repo/debian wheezy main' state=present
   - name: Add libgdiplus repo
+    become: true
+    become_user: root
     apt_repository: repo='deb http://download.mono-project.com/repo/debian wheezy-libjpeg62-compat main' state=present
   - name: Add Sonarr key
+    become: true
+    become_user: root
     apt_key: keyserver=keyserver.ubuntu.com id=FDA5DFFC state=present
     ignore_errors: true
   - name: Add Sonarr repo
+    become: true
+    become_user: root
     apt_repository: repo='deb http://apt.sonarr.tv/ master main' state=present
   - name: Install basic required software
+    become: true
+    become_user: root
     apt: name={{ item }} state=present update_cache=true cache_valid_time=3600
     with_items:
     - deluged
@@ -27,63 +36,121 @@
     - samba
     - samba-common-bin
   - name: Mount External Drive
+    become: true
+    become_user: root
     mount: name=/mnt/stash src=/dev/sda1 state=mounted fstype=ntfs-3g
   - name: Create [Movies] link
+    become: true
+    become_user: root
     file: path=/home/pi/Movies src=/mnt/stash/Movies state=link
   - name: Create [Series] link
+    become: true
+    become_user: root
     file: path=/home/pi/Series src=/mnt/stash/Series state=link
   - name: Create [Downloads] link
+    become: true
+    become_user: root
     file: path=/home/pi/Downloads src=/mnt/stash/Downloads state=link
   - name: Add Deluge user and group
+    become: true
+    become_user: root
     user: name=deluge system=yes home=/var/lib/deluge state=present
   - name: Add pi to user group
+    become: true
+    become_user: root
     user: append=yes name=pi groups=deluge generate_ssh_key=no state=present
   - name: Add Deluge systemd service
+    become: true
+    become_user: root
     copy: src=files/deluged.service dest=/etc/systemd/system/deluged.service
   - name: Enable deluge service
+    become: true
+    become_user: root
     command: /bin/systemctl enable deluged 
   - name: Stop deluge service
+    become: true
+    become_user: root
     service: name=deluged state=stopped
   - name: Add Deluge-web systemd service
+    become: true
+    become_user: root
     copy: src=files/deluge-web.service dest=/etc/systemd/system/deluge-web.service
   - name: Enable deluge-web service
+    become: true
+    become_user: root
     command: /bin/systemctl enable deluge-web
   - name: Stop deluge-web service
+    become: true
+    become_user: root
     service: name=deluge-web state=stopped
   - name: Create required deluge directories
+    become: true
+    become_user: root
     file: path=/var/lib/deluge/{{ item }} state=directory owner=deluge group=deluge
     with_items:
     - .config/deluge
     - Downloads
   - name: Add deluge auth file
+    become: true
+    become_user: root
     copy: src=files/deluge_auth dest=/var/lib/deluge/.config/deluge/auth owner=deluge group=deluge
   - name: Set deluge config
+    become: true
+    become_user: root
     copy: src=files/deluge_core.conf dest=/var/lib/deluge/.config/deluge/core.conf owner=deluge group=deluge
   - name: Setup deluge logging
+    become: true
+    become_user: root
     file: path=/var/log/deluge state=directory owner=deluge group=deluge mode=750 recurse=yes
   - name: Create [Incomplete] link from deluge to mounted drive
+    become: true
+    become_user: root
     file: dest=/var/lib/deluge/Downloads/Incomplete src=/mnt/stash/Downloads/torrent-incomplete state=link
   - name: Create [Incomplete] link from deluge to mounted drive
+    become: true
+    become_user: root
     file: dest=/var/lib/deluge/Downloads/Complete src=/mnt/stash/Downloads/torrent-complete state=link
   - name: Start deluge service
+    become: true
+    become_user: root
     service: name=deluged state=started
   - name: Start deluge-web service
+    become: true
+    become_user: root
     service: name=deluge-web state=started
   - name: Ensure /opt/NzbDrone is owned by user pi
+    become: true
+    become_user: root
     file: path=/opt/NzbDrone owner=pi group=pi recurse=yes
   - name: Add Sonarr service
+    become: true
+    become_user: root
     copy: src=files/sonarr.service dest=/etc/systemd/system/sonarr.service
   - name: Enable Sonarr service
+    become: true
+    become_user: root
     command: /bin/systemctl enable sonarr 
   - name: Ensure Sonarr service 
+    become: true
+    become_user: root
     service: name=sonarr state=started
   - name: set samba config
+    become: true
+    become_user: root
     copy: src=files/smb.conf dest=/etc/samba/smb.conf owner=root group=root
   - name: Enable Samba service
+    become: true
+    become_user: root
     command: /bin/systemctl enable smbd 
   - name: Set hostname to downloadpi
+    become: true
+    become_user: root
     hostname: name=downloadpi
   - name: Ensure Samba service is restarted
+    become: true
+    become_user: root
     service: name=smbd state=restarted
   - name: Ensure nmbd service is restarted
+    become: true
+    become_user: root
     service: name=nmbd state=restarted
